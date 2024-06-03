@@ -1,0 +1,26 @@
+# Путь к файлу со списком серверов
+$serversListPath = "c:\temp\servers_list.txt"
+
+# Путь к выходному файлу
+$outputFilePath = "c:\temp\Список запущенных служб Theseus.txt"
+
+# Чтение списка серверов
+$servers = Get-Content -Path $serversListPath
+
+# Создание или очистка выходного файла и добавление заголовка
+"ComputerName,ServiceName,DisplayName,Status" | Out-File -FilePath $outputFilePath
+
+# Обход каждого сервера в списке
+foreach ($server in $servers) {
+    # Выполнение команды на удаленном сервере
+    $services = Invoke-Command -ComputerName $server -ScriptBlock {
+        Get-Service *theseus* | Where-Object { $_.Status -eq 'Running' }
+    }
+
+    # Запись результатов в выходной файл
+    foreach ($service in $services) {
+        "$server,$($service.Name),$($service.DisplayName),$($service.Status)" | Out-File -FilePath $outputFilePath -Append
+    }
+}
+
+Write-Host "Скрипт выполнен. Результаты сохранены в $outputFilePath"
